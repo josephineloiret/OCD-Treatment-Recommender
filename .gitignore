@@ -66,3 +66,27 @@ Thumbs.db
 *.tmp
 *.temp
 
+# Exclude all files except the 4 main project files
+# Video files
+*.m4v
+
+# Presentation files
+*.pptx
+*.docx
+
+# Output examples
+ouput examples/
+
+# Models directory
+models/
+
+# All other files (ignore everything, then explicitly add what we want)
+*
+
+# But allow these 4 files
+!README.md
+!OCD_APP_GEN.py
+!OCD_APP_PRED.py
+!ocd_patient_dataset.csv
+!.gitignore
+
