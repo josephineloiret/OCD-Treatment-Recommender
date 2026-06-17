@@ -1,0 +1,14 @@
+Most predictive terms per condition
+========================================
+
+adhd:
+  adhd, adderall, vyvanse, meds, ritalin, concerta, medication, focus, diagnosis, stimulants, dopamine, add, strattera, hyperfixation, task, medicated, bored, methylphenidate, rejection, executive
+
+depression:
+  depression, depressed, life, depressive, antidepressants, suicidal, die, friends, suicide, killing, kill, depression anxiety, year, future, happy, sad, reason, end, sessions, worthless
+
+ocd:
+  ocd, intrusive, compulsions, compulsion, obsession, erp, obsessions, thoughts, intrusive thoughts, pocd, pure, false, hocd, obsessing, reassurance, rituals, worrying, fear, luvox, rocd
+
+ptsd:
+  ptsd, trauma, flashbacks, nightmares, abuser, triggered, trigger, abuse, triggers, traumatic, cptsd, memories, happened, healing, rape, traumas, flashback, prazosin, triggering, heal

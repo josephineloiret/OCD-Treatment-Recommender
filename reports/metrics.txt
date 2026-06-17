@@ -1,0 +1,22 @@
+OCD SCREENING CLASSIFIER - EVALUATION REPORT
+====================================================
+Conditions (4): adhd, depression, ocd, ptsd
+Train posts: 16240   Test posts: 4061
+
+Majority-class baseline accuracy : 0.296
+5-fold CV accuracy  : 0.836 +/- 0.006
+5-fold CV macro-F1  : 0.824 +/- 0.007
+Held-out test accuracy : 0.839
+Held-out test macro-F1 : 0.824
+
+Per-class report (held-out test set):
+              precision    recall  f1-score   support
+
+        adhd      0.876     0.859     0.867      1200
+  depression      0.781     0.848     0.813      1200
+         ocd      0.902     0.855     0.878      1200
+        ptsd      0.752     0.722     0.737       461
+
+    accuracy                          0.839      4061
+   macro avg      0.828     0.821     0.824      4061
+weighted avg      0.842     0.839     0.840      4061

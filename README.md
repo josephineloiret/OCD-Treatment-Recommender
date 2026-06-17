@@ -1,38 +1,72 @@
-# OCD Treatment Recommender
+# OCD Screening Assistant
 
-A machine learning-powered web application that assists psychiatrists in making medication recommendations for OCD patients. The system uses a Random Forest classifier to predict the appropriate drug group (SSRI, SNRI, or Benzodiazepine) based on patient characteristics, then leverages OpenAI GPT-4o to generate personalized medication recommendations within that group. The application provides a user-friendly web interface where clinicians can input patient data and receive AI-generated treatment suggestions with scientific reasoning.
+A machine-learning web app that reads a free-text description of someone's
+experience and estimates which mental-health condition it most resembles
+(**OCD, depression, ADHD, or PTSD**), then surfaces **evidence-based, guideline-level
+treatment information** for OCD. It is built on **real Reddit mental-health posts**
+and is intended as a research/educational demo of an end-to-end ML pipeline:
+data → text classifier → screening decision → guidance → deployed web app.
 
-## How to Run
+> This is **not** a diagnostic tool. Screening is text-similarity, can be wrong,
+> and any real mental-health concern or treatment decision must be handled by a
+> licensed clinician.
 
-1. **Install dependencies:**
+## Results (held-out test set)
+
+Trained on ~20k real posts across 4 conditions (TF-IDF + Logistic Regression):
+
+| Metric | Score |
+|---|---|
+| Majority-class baseline | 0.296 |
+| 5-fold CV accuracy | 0.836 ± 0.006 |
+| **Held-out test accuracy** | **0.839** |
+| Held-out test macro-F1 | 0.824 |
+| **OCD class** | precision **0.90**, recall **0.86**, F1 **0.88** |
+
+Full report and confusion matrix are in `reports/`. The model also yields highly
+interpretable signals — e.g. the top OCD terms are *intrusive, compulsions, erp,
+obsessions, rituals, reassurance*.
+
+## How to run
+
+1. Create an environment and install dependencies (Python 3.10–3.12 recommended):
    ```bash
-   pip install flask pandas scikit-learn joblib openai python-dotenv
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
    ```
 
-2. **Set up OpenAI API key:**
-   - Create a `key.env` file in the project root
-   - Add: `OPENAI_API_KEY=your_api_key_here`
-
-3. **Train the model** (if models don't exist):
+2. (Optional) Retrain from scratch:
    ```bash
-   python3 OCD_APP_PRED.py
+   python download_data.py   # pulls real Reddit data into data/
+   python train.py           # writes models/ and reports/
    ```
+   A pre-trained model is already included in `models/`, so you can skip this.
 
-4. **Run the web application:**
+3. Run the web app:
    ```bash
-   python3 OCD_APP_GEN.py
+   python app.py
    ```
+   Open http://localhost:5001 and paste a description to screen.
 
-5. **Access the app:** Open `http://localhost:5001` in your browser
+### Optional GPT guidance layer
 
-## Project Files
+By default the app shows built-in, evidence-based OCD guidance (no API key needed).
+To have GPT phrase the guidance for the specific input instead, create `key.env`
+with `OPENAI_API_KEY=your_key` and `pip install openai`. The app auto-detects it.
 
-- **`OCD_APP_PRED.py`**: Trains a Random Forest classifier on the patient dataset to predict medication groups. Preprocesses the data, splits into train/test sets, evaluates model performance, and saves the trained model to the `models/` directory.
+## Project files
 
-- **`OCD_APP_GEN.py`**: Flask web application that loads the trained model and uses OpenAI GPT-4o to generate medication recommendations. Provides a web form for inputting patient data (age, symptom duration, Y-BOCS scores, depression/anxiety status) and displays the predicted drug group along with AI-generated specific medication suggestions.
+- **`download_data.py`** – downloads the real Reddit dataset (Hugging Face, public domain).
+- **`train.py`** – cleans text, trains the TF-IDF + Logistic Regression classifier,
+  and writes evaluation metrics, a confusion matrix, and top predictive words to `reports/`.
+- **`app.py`** – Flask web app: text in → predicted condition + probabilities →
+  evidence-based (or GPT-phrased) guidance, with a clinician-approval disclaimer.
+- **`models/`** – the saved trained pipeline.
+- **`reports/`** – metrics, confusion matrix, and interpretability output.
 
-- **`ocd_patient_dataset.csv`**: Contains historical patient data including demographics, Y-BOCS scores, comorbidities, and medication prescriptions used for training the predictive model.
+## Data
 
-## Important Notes
-
-- **Disclaimer**: This tool is for research/educational purposes only. All recommendations must be reviewed and approved by a licensed medical professional.
+Reddit Mental Health posts (`solomonk/reddit_mental_health_posts`, Hugging Face),
+distributed under the Public Domain Dedication and License; reuse subject to
+Reddit API terms.

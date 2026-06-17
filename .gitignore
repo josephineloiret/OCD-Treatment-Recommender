@@ -1,0 +1,36 @@
+# Secrets - NEVER commit API keys
+key.env
+.env
+*.env
+
+# Virtual environment
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.so
+.mplcache/
+
+# OS / IDE
+.DS_Store
+._*
+.vscode/
+.idea/
+*.swp
+
+# Large raw data (re-download with: python download_data.py)
+data/
+
+# Logs / temp
+*.log
+*.tmp
+
+# Old class-project media (large)
+*.m4v
+*.pptx
+*.docx
+ouput examples/
