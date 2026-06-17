@@ -211,100 +211,170 @@ PAGE = """
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OCD Screening Assistant</title>
+<title>OCD Screening Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#0f172a; --card:#1e293b; --accent:#38bdf8; --ocd:#34d399; --muted:#94a3b8; }
-  * { box-sizing: border-box; }
-  body { margin:0; font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-         background:linear-gradient(160deg,#0f172a,#1e293b); color:#e2e8f0; min-height:100vh; }
-  .wrap { max-width: 820px; margin: 0 auto; padding: 32px 20px 60px; }
-  h1 { font-size: 1.7rem; margin-bottom: 4px; }
-  .sub { color: var(--muted); margin-bottom: 24px; font-size: .95rem; }
-  .card { background: var(--card); border:1px solid #334155; border-radius:14px;
-          padding:22px; margin-bottom:20px; box-shadow:0 8px 30px rgba(0,0,0,.25); }
-  textarea { width:100%; min-height:150px; background:#0b1220; color:#e2e8f0;
-             border:1px solid #334155; border-radius:10px; padding:12px; font-size:1rem; resize:vertical; }
-  button { margin-top:14px; background:var(--accent); color:#04263a; border:none;
-           padding:12px 22px; font-size:1rem; font-weight:700; border-radius:10px; cursor:pointer; }
-  button:hover { filter:brightness(1.08); }
-  .bar-row { display:flex; align-items:center; gap:12px; margin:8px 0; }
-  .bar-label { width:110px; text-transform:capitalize; font-size:.92rem; }
-  .bar-track { flex:1; background:#0b1220; border-radius:8px; overflow:hidden; height:22px; border:1px solid #334155; }
-  .bar-fill { height:100%; background:var(--accent); }
-  .bar-fill.ocd { background:var(--ocd); }
-  .bar-pct { width:54px; text-align:right; font-variant-numeric:tabular-nums; font-size:.9rem; }
-  .verdict { font-size:1.15rem; font-weight:700; margin-bottom:6px; }
-  .verdict.ocd { color:var(--ocd); }
-  .verdict.uncertain { color:#fbbf24; }
-  .note { color:var(--muted); font-size:.9rem; margin-bottom:10px; }
-  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
-  .chip { background:#0b1220; border:1px solid var(--accent); color:#bfdbfe;
-          padding:5px 11px; border-radius:999px; font-size:.85rem; }
-  .chip.ocd { border-color:var(--ocd); color:#a7f3d0; }
-  .guidance { white-space:pre-wrap; line-height:1.5; color:#cbd5e1; }
-  .disclaimer { color:var(--muted); font-size:.82rem; margin-top:18px; border-top:1px solid #334155; padding-top:12px; }
-  .pill { display:inline-block; font-size:.72rem; background:#334155; color:#cbd5e1;
-          padding:3px 9px; border-radius:999px; margin-left:8px; vertical-align:middle; }
+  :root {
+    --ink:#e7efe9; --muted:#7e9389; --faint:#54655d;
+    --bg:#070b09; --panel:#0d1411; --panel-2:#101a15;
+    --line:#1d2a23; --accent:#37e0a8; --accent-dim:#1f6e54;
+    --warn:#f5c451; --ocd:#37e0a8;
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --serif:'Fraunces',Georgia,serif;
+  }
+  * { box-sizing:border-box; }
+  html { -webkit-font-smoothing:antialiased; }
+  body {
+    margin:0; min-height:100vh; color:var(--ink); font-family:var(--sans);
+    background:
+      radial-gradient(1100px 520px at 82% -12%, rgba(55,224,168,.12), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(55,224,168,.06), transparent 55%),
+      var(--bg);
+  }
+  body::before {
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:radial-gradient(circle at 1px 1px, rgba(231,239,233,.035) 1px, transparent 0);
+    background-size:24px 24px; mask-image:linear-gradient(#000,transparent 90%);
+  }
+  .wrap { position:relative; z-index:1; max-width:780px; margin:0 auto; padding:54px 22px 80px; }
+
+  .kicker { font-family:var(--mono); font-size:.72rem; letter-spacing:.28em; text-transform:uppercase;
+            color:var(--accent); display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .kicker::before { content:""; width:26px; height:1px; background:var(--accent); opacity:.7; }
+  h1 { font-family:var(--serif); font-weight:600; font-size:3.1rem; line-height:1.02;
+       letter-spacing:-.02em; margin:0 0 14px; }
+  h1 em { font-style:italic; color:var(--accent); }
+  .sub { color:var(--muted); max-width:60ch; font-size:1rem; line-height:1.55; margin-bottom:8px; }
+  .status { font-family:var(--mono); font-size:.74rem; color:var(--faint); margin:18px 0 30px;
+            display:flex; align-items:center; gap:8px; }
+  .dot { width:7px; height:7px; border-radius:50%; background:var(--accent); box-shadow:0 0 10px var(--accent); }
+  .dot.off { background:var(--faint); box-shadow:none; }
+
+  .panel { position:relative; background:linear-gradient(180deg,var(--panel-2),var(--panel));
+           border:1px solid var(--line); border-radius:4px; padding:24px; margin-bottom:18px; }
+  .panel__tag { position:absolute; top:-9px; left:18px; background:var(--bg); padding:0 9px;
+                font-family:var(--mono); font-size:.66rem; letter-spacing:.2em; text-transform:uppercase; color:var(--faint); }
+
+  textarea { width:100%; min-height:142px; resize:vertical; background:#060a08; color:var(--ink);
+             border:1px solid var(--line); border-radius:3px; padding:14px; font-family:var(--mono);
+             font-size:.92rem; line-height:1.5; outline:none; transition:border-color .2s, box-shadow .2s; }
+  textarea:focus { border-color:var(--accent-dim); box-shadow:0 0 0 3px rgba(55,224,168,.10); }
+  textarea::placeholder { color:var(--faint); }
+  .row { display:flex; align-items:center; justify-content:space-between; margin-top:14px; gap:14px; }
+  .hint { font-family:var(--mono); font-size:.7rem; color:var(--faint); }
+  button { font-family:var(--mono); font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+           font-size:.8rem; color:#05140d; background:var(--accent); border:none; cursor:pointer;
+           padding:13px 22px; border-radius:3px; transition:transform .12s, box-shadow .2s; }
+  button:hover { box-shadow:0 6px 22px rgba(55,224,168,.28); transform:translateY(-1px); }
+  button:active { transform:translateY(0); }
+
+  .verdict-top { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:4px; }
+  .verdict-label { font-family:var(--serif); font-size:2.1rem; font-weight:600; letter-spacing:-.01em; }
+  .verdict-label.ocd { color:var(--ocd); }
+  .verdict-label.warn { color:var(--warn); }
+  .verdict-num { font-family:var(--mono); font-size:1.05rem; color:var(--muted); }
+  .note { color:var(--muted); font-size:.9rem; line-height:1.5; margin:6px 0 18px; }
+
+  .bar-row { display:grid; grid-template-columns:96px 1fr 48px; align-items:center; gap:14px; margin:11px 0; }
+  .bar-label { font-family:var(--mono); font-size:.78rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+  .bar { height:10px; background:#060a08; border:1px solid var(--line); border-radius:99px; overflow:hidden; }
+  .bar__fill { display:block; height:100%; width:0; border-radius:99px;
+               background:linear-gradient(90deg,var(--accent-dim),var(--faint));
+               animation:grow 1.1s cubic-bezier(.2,.85,.2,1) forwards; }
+  .bar__fill.ocd { background:linear-gradient(90deg,var(--accent-dim),var(--accent)); box-shadow:0 0 12px rgba(55,224,168,.35); }
+  .bar-pct { font-family:var(--mono); font-size:.82rem; text-align:right; color:var(--ink); }
+  @keyframes grow { to { width:var(--w); } }
+
+  .chips { display:flex; flex-wrap:wrap; gap:9px; margin-top:6px; }
+  .chip { font-family:var(--mono); font-size:.8rem; color:var(--muted); background:#060a08;
+          border:1px solid var(--line); border-radius:3px; padding:6px 11px; }
+  .chip::before { content:"› "; color:var(--accent-dim); }
+  .chip.ocd { color:var(--ocd); border-color:var(--accent-dim); }
+  .chip.ocd::before { color:var(--accent); }
+
+  .guidance { font-family:var(--sans); white-space:pre-wrap; line-height:1.62; color:#cdd9d1; font-size:.95rem; }
+  .disclaimer { color:var(--faint); font-size:.78rem; line-height:1.5; margin-top:26px;
+                border-top:1px solid var(--line); padding-top:16px; font-family:var(--mono); }
+
+  .reveal { opacity:0; transform:translateY(16px); animation:rise .65s cubic-bezier(.2,.8,.2,1) forwards; }
+  .d1{animation-delay:.04s}.d2{animation-delay:.12s}.d3{animation-delay:.2s}.d4{animation-delay:.28s}
+  @keyframes rise { to { opacity:1; transform:none; } }
+  @media (max-width:560px){ h1{font-size:2.3rem} .bar-row{grid-template-columns:74px 1fr 42px} }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>OCD Screening Assistant
-    <span class="pill">{{ 'live AI guidance' if gpt_on else 'built-in guidance' }}</span>
-  </h1>
-  <div class="sub">Type how someone is feeling/behaving. A model trained on real
-    Reddit mental-health posts estimates which condition the text most resembles,
-    then shows evidence-based guidance. Research demo &mdash; not a diagnosis.</div>
+  <div class="kicker reveal">NLP Diagnostic &middot; TF-IDF + Logistic Regression</div>
+  <h1 class="reveal d1">OCD Screening <em>Console</em></h1>
+  <p class="sub reveal d2">Describe how someone is feeling or behaving. A classifier trained on
+    real Reddit mental-health posts estimates which condition the language most resembles, shows
+    the words driving that call, and surfaces evidence-based guidance.</p>
+  <div class="status reveal d2">
+    <span class="dot {{ '' if gpt_on else 'off' }}"></span>
+    {{ 'LIVE AI GUIDANCE' if gpt_on else 'BUILT-IN GUIDANCE' }} &middot; RESEARCH DEMO, NOT A DIAGNOSIS
+  </div>
 
-  <div class="card">
+  <div class="panel reveal d3">
+    <span class="panel__tag">Input</span>
     <form method="post">
       <textarea name="text" placeholder="e.g. I keep checking the stove over and over and can't stop intrusive thoughts that something bad will happen if I don't...">{{ text or '' }}</textarea>
-      <button type="submit">Run screening</button>
+      <div class="row">
+        <span class="hint">free text &middot; min 10 chars</span>
+        <button type="submit">Run screening &rarr;</button>
+      </div>
     </form>
   </div>
 
   {% if ranked %}
-  <div class="card">
+  <div class="panel reveal d1">
+    <span class="panel__tag">Prediction</span>
     {% if uncertain %}
-    <div class="verdict uncertain">Uncertain &middot; not enough signal</div>
-    <div class="note">Top guess is {{ top_label|upper }} at only {{ '%.0f'|format(ranked[0][1]*100) }}%,
-      below the {{ '%.0f'|format(threshold*100) }}% confidence threshold &mdash; so the model abstains
-      instead of forcing a label.</div>
-    {% else %}
-    <div class="verdict {{ 'ocd' if top_label=='ocd' else '' }}">
-      Top match: {{ top_label|upper }} &middot; {{ '%.0f'|format(ranked[0][1]*100) }}% confidence
+    <div class="verdict-top">
+      <span class="verdict-label warn">Uncertain</span>
+      <span class="verdict-num">top: {{ top_label|upper }} @ {{ '%.0f'|format(ranked[0][1]*100) }}%</span>
     </div>
+    <div class="note">Below the {{ '%.0f'|format(threshold*100) }}% confidence threshold &mdash; the model
+      abstains instead of forcing a label (the screening analogue of flagging an out-of-distribution reading).</div>
+    {% else %}
+    <div class="verdict-top">
+      <span class="verdict-label {{ 'ocd' if top_label=='ocd' else '' }}">{{ top_label|upper }}</span>
+      <span class="verdict-num">{{ '%.1f'|format(ranked[0][1]*100) }}% confidence</span>
+    </div>
+    <div class="note">Probability across all screened conditions:</div>
     {% endif %}
     {% for label, p in ranked %}
     <div class="bar-row">
-      <div class="bar-label">{{ label }}</div>
-      <div class="bar-track"><div class="bar-fill {{ 'ocd' if label=='ocd' else '' }}" style="width: {{ p*100 }}%"></div></div>
-      <div class="bar-pct">{{ '%.0f'|format(p*100) }}%</div>
+      <span class="bar-label">{{ label }}</span>
+      <span class="bar"><span class="bar__fill {{ 'ocd' if label=='ocd' else '' }}" style="--w: {{ p*100 }}%"></span></span>
+      <span class="bar-pct">{{ '%.0f'|format(p*100) }}%</span>
     </div>
     {% endfor %}
   </div>
 
   {% if signals %}
-  <div class="card">
-    <div class="verdict">Why this prediction</div>
-    <div class="note">Words in the text that most pushed the model toward {{ top_label|upper }}
-      (TF-IDF &times; model weight):</div>
+  <div class="panel reveal d2">
+    <span class="panel__tag">Explanation</span>
+    <div class="note">Terms that most pushed the model toward <b>{{ top_label|upper }}</b>
+      (TF-IDF &times; model weight) &mdash; feature attribution:</div>
     <div class="chips">
       {% for w in signals %}<span class="chip {{ 'ocd' if top_label=='ocd' else '' }}">{{ w }}</span>{% endfor %}
     </div>
   </div>
   {% endif %}
 
-  <div class="card">
-    <div class="verdict">Guidance</div>
+  <div class="panel reveal d3">
+    <span class="panel__tag">Guidance</span>
     <div class="guidance">{{ guidance }}</div>
   </div>
   {% endif %}
 
   <div class="disclaimer">
-    This tool is for research and educational purposes only. It performs text
-    similarity screening, not medical diagnosis, and can be wrong. Any mental
-    health concern or treatment decision must be handled by a licensed clinician.
+    Research/educational demo. This performs text-similarity screening, not medical diagnosis,
+    and can be wrong. Any mental-health concern or treatment decision must be handled by a
+    licensed clinician.
   </div>
 </div>
 </body>
