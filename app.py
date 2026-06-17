@@ -78,6 +78,7 @@ GUIDANCE_INSTRUCTIONS = (
     "Rules: name medication CLASSES and representative examples only - do NOT give doses or "
     "tell the person what to take. Be accurate to current clinical guidelines for the "
     "predicted condition. Briefly tie your reasoning to cues in the description when relevant. "
+    "Write plainly and do NOT use em dashes or en dashes; use short sentences or commas. "
     "Keep it concise (about 9-13 lines total). Finish with one sentence stating this is "
     "general educational information, not a diagnosis, and must be reviewed by a licensed "
     "clinician."
@@ -150,6 +151,15 @@ UNCERTAIN_GUIDANCE = (
 )
 
 
+def _humanize(s: str) -> str:
+    """Strip em/en dashes and the AI-tell ' - ' spacing so copy reads naturally."""
+    return (
+        s.replace(" \u2014 ", ", ").replace("\u2014", ", ")
+        .replace(" \u2013 ", ", ").replace("\u2013", ", ")
+        .replace(" - ", ", ")
+    )
+
+
 def _static_guidance(top_label: str) -> str:
     return CONDITION_GUIDANCE.get(top_label, GENERIC_GUIDANCE) + DISCLAIMER_LINE
 
@@ -211,7 +221,7 @@ PAGE = """
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OCD Screening &mdash; Clinical Decision Support</title>
+<title>OCD Screening / Clinical Decision Support</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
@@ -302,13 +312,11 @@ PAGE = """
 <div class="sheet">
   <header class="mast">
     <div class="meta reveal"><span>Clinical Decision Support</span><span>OCD Screening / NLP Triage</span></div>
-    <h1 class="reveal d1">Screening &amp; <em>Triage</em> Console</h1>
-    <p class="lede reveal d2">A decision-support aid for clinicians. The model screens a patient's
-      free-text intake, estimates the most likely condition, shows the language behind the call, and
-      abstains when unsure &mdash; the clinician reviews every output and makes the decision.</p>
+    <h1 class="reveal d1">Screening &amp; <em>Triage</em></h1>
+    <p class="lede reveal d2">Reads a patient's intake text, flags the most likely condition, and shows why. You review and decide.</p>
     <div class="statusline reveal d2">
       <span class="tick {{ '' if gpt_on else 'off' }}"></span>
-      {{ 'LIVE AI GUIDANCE' if gpt_on else 'BUILT-IN GUIDANCE' }} &middot; FOR CLINICIAN USE &middot; NOT A DIAGNOSIS
+      {{ 'LIVE AI GUIDANCE' if gpt_on else 'BUILT-IN GUIDANCE' }} &middot; CLINICIAN USE &middot; NOT A DIAGNOSIS
     </div>
   </header>
 
@@ -317,9 +325,9 @@ PAGE = """
     <div>
       <div class="field-label">Patient intake text</div>
       <form method="post">
-        <textarea name="text" placeholder="Paste or type the patient's own words, e.g. 'I keep checking the stove over and over and can't stop intrusive thoughts that something bad will happen if I don't...'">{{ text or '' }}</textarea>
+        <textarea name="text" placeholder="Type or paste the patient's own words about how they've been feeling.">{{ text or '' }}</textarea>
         <div class="actions">
-          <span class="hint">free text &middot; min 10 chars &middot; de-identified</span>
+          <span class="hint">min 10 chars &middot; de-identified</span>
           <button type="submit">Run screening &rarr;</button>
         </div>
       </form>
@@ -336,15 +344,13 @@ PAGE = """
         <span class="verdict-label warn">Uncertain</span>
         <span class="verdict-num">top: {{ top_label|upper }} @ {{ '%.0f'|format(ranked[0][1]*100) }}%</span>
       </div>
-      <div class="note">Below the {{ '%.0f'|format(threshold*100) }}% confidence threshold &mdash; the model
-        abstains rather than forcing a label and defers to clinician judgement (the screening analogue of
-        flagging an out-of-distribution reading for review).</div>
+      <div class="note">Below the {{ '%.0f'|format(threshold*100) }}% threshold, so the model holds back instead of guessing.</div>
       {% else %}
       <div class="verdict-top">
         <span class="verdict-label {{ 'ocd' if top_label=='ocd' else '' }}">{{ top_label|upper }}</span>
-        <span class="verdict-num">{{ '%.1f'|format(ranked[0][1]*100) }}% confidence &middot; for clinician review</span>
+        <span class="verdict-num">{{ '%.1f'|format(ranked[0][1]*100) }}% confidence</span>
       </div>
-      <div class="note">Estimated probability across screened conditions:</div>
+      <div class="note">Probability by condition:</div>
       {% endif %}
       {% for label, p in ranked %}
       <div class="bar-row">
@@ -361,8 +367,7 @@ PAGE = """
     <div class="block__no">03</div>
     <div>
       <div class="field-label">Contributing language</div>
-      <div class="note">Terms that most drove the model toward <b>{{ top_label|upper }}</b>
-        (TF-IDF &times; model weight) &mdash; an interpretable record of the reasoning:</div>
+      <div class="note">Words that pushed the model toward <b>{{ top_label|upper }}</b> (TF-IDF &times; weight):</div>
       <div class="chips">
         {% for w in signals %}<span class="chip {{ 'ocd' if top_label=='ocd' else '' }}">{{ w }}</span>{% endfor %}
       </div>
@@ -373,16 +378,15 @@ PAGE = """
   <section class="block reveal d3">
     <div class="block__no">04</div>
     <div>
-      <div class="field-label">Evidence-based options &mdash; for clinician review</div>
+      <div class="field-label">Treatment options for review</div>
       <div class="guidance">{{ guidance }}</div>
     </div>
   </section>
   {% endif %}
 
   <div class="colophon">
-    Research / educational decision-support demo. Performs text-similarity screening, not diagnosis,
-    and can be wrong. Intended to assist a licensed clinician, who reviews every output and makes all
-    clinical decisions. Do not enter identifying patient information.
+    Educational demo. Screening can be wrong and is not a diagnosis. A licensed clinician reviews
+    every output. Do not enter identifying information.
   </div>
 </div>
 </body>
@@ -406,7 +410,7 @@ def index():
                 "uncertain": uncertain,
                 "threshold": CONFIDENCE_THRESHOLD,
                 "signals": [] if uncertain else explain(text, top_label),
-                "guidance": UNCERTAIN_GUIDANCE if uncertain else get_guidance(top_label, text),
+                "guidance": _humanize(UNCERTAIN_GUIDANCE if uncertain else get_guidance(top_label, text)),
             })
     return render_template_string(PAGE, **ctx)
 
