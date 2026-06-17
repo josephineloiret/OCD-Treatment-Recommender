@@ -17,13 +17,24 @@ This is a research/educational demo and is NOT a diagnostic tool.
 import os
 
 import joblib
+import numpy as np
 from flask import Flask, render_template_string, request
 
 MODEL_DIR = "models"
 pipeline = joblib.load(os.path.join(MODEL_DIR, "pipeline.joblib"))
 labels = joblib.load(os.path.join(MODEL_DIR, "labels.joblib"))
 
-# Optional GPT layer ---------------------------------------------------------
+# If the model's top probability is below this, we report "uncertain" instead of
+# forcing a guess - the screening analogue of novelty/anomaly detection.
+CONFIDENCE_THRESHOLD = 0.45
+
+# Optional LLM guidance layer ------------------------------------------------
+# The provider is configurable so the live demo can run on a FREE,
+# OpenAI-compatible API (e.g. Groq or Google Gemini) instead of paid OpenAI.
+# Set these env vars (e.g. in the Render dashboard):
+#   LLM_API_KEY   - your key (falls back to OPENAI_API_KEY)
+#   LLM_BASE_URL  - e.g. https://api.groq.com/openai/v1   (omit for OpenAI)
+#   LLM_MODEL     - e.g. llama-3.3-70b-versatile (Groq) or gpt-4o-mini (OpenAI)
 client = None
 try:
     from dotenv import load_dotenv
@@ -31,10 +42,17 @@ try:
 except Exception:
     pass
 
-if os.getenv("OPENAI_API_KEY"):
+LLM_API_KEY = os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY")
+LLM_BASE_URL = os.getenv("LLM_BASE_URL")  # None -> default OpenAI endpoint
+LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
+
+if LLM_API_KEY:
     try:
         from openai import OpenAI
-        client = OpenAI()
+        kwargs = {"api_key": LLM_API_KEY}
+        if LLM_BASE_URL:
+            kwargs["base_url"] = LLM_BASE_URL
+        client = OpenAI(**kwargs)
     except Exception:
         client = None
 
@@ -123,6 +141,14 @@ DISCLAIMER_LINE = (
     "approved by a licensed clinician before any treatment decision."
 )
 
+UNCERTAIN_GUIDANCE = (
+    "The model is not confident enough about this text to map it to a single condition "
+    "(its top probability is below the decision threshold). Rather than force a guess, it "
+    "abstains - the same principle used in fault detection, where a low-confidence or "
+    "out-of-distribution reading should be flagged for review instead of acted on. Try a "
+    "longer or more specific description." + DISCLAIMER_LINE
+)
+
 
 def _static_guidance(top_label: str) -> str:
     return CONDITION_GUIDANCE.get(top_label, GENERIC_GUIDANCE) + DISCLAIMER_LINE
@@ -134,12 +160,13 @@ def get_guidance(top_label: str, text: str) -> str:
     condition = CONDITION_FULL.get(top_label, top_label)
     try:
         resp = client.chat.completions.create(
-            model="gpt-4o",
+            model=LLM_MODEL,
             messages=[
                 {"role": "system", "content": GUIDANCE_INSTRUCTIONS},
                 {"role": "user", "content": f"Predicted condition: {condition}\n\nDescription:\n{text}"},
             ],
             temperature=0.3,
+            max_tokens=500,
         )
         return resp.choices[0].message.content.strip()
     except Exception:
@@ -151,6 +178,29 @@ def screen(text: str):
     classes = list(pipeline.named_steps["clf"].classes_)
     ranked = sorted(zip(classes, proba), key=lambda t: t[1], reverse=True)
     return ranked
+
+
+def explain(text: str, top_label: str, k: int = 8):
+    """Return the input words that most pushed the model toward `top_label`.
+
+    For a linear model over TF-IDF features, each word's contribution to a class
+    score is simply tfidf_value * class_coefficient - so we can read off exactly
+    which terms drove the prediction (the text analogue of feature attribution on
+    sensor signals).
+    """
+    vec = pipeline.named_steps["tfidf"]
+    clf = pipeline.named_steps["clf"]
+    classes = list(clf.classes_)
+    X = vec.transform([text]).tocoo()
+    coef = clf.coef_
+    if coef.shape[0] == 1:  # binary case: row applies to the positive class
+        row = coef[0] if top_label == classes[1] else -coef[0]
+    else:
+        row = coef[classes.index(top_label)]
+    feats = vec.get_feature_names_out()
+    contribs = [(feats[i], v * row[i]) for i, v in zip(X.col, X.data)]
+    contribs.sort(key=lambda t: t[1], reverse=True)
+    return [w for w, c in contribs if c > 0][:k]
 
 
 app = Flask(__name__)
@@ -185,6 +235,12 @@ PAGE = """
   .bar-pct { width:54px; text-align:right; font-variant-numeric:tabular-nums; font-size:.9rem; }
   .verdict { font-size:1.15rem; font-weight:700; margin-bottom:6px; }
   .verdict.ocd { color:var(--ocd); }
+  .verdict.uncertain { color:#fbbf24; }
+  .note { color:var(--muted); font-size:.9rem; margin-bottom:10px; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+  .chip { background:#0b1220; border:1px solid var(--accent); color:#bfdbfe;
+          padding:5px 11px; border-radius:999px; font-size:.85rem; }
+  .chip.ocd { border-color:var(--ocd); color:#a7f3d0; }
   .guidance { white-space:pre-wrap; line-height:1.5; color:#cbd5e1; }
   .disclaimer { color:var(--muted); font-size:.82rem; margin-top:18px; border-top:1px solid #334155; padding-top:12px; }
   .pill { display:inline-block; font-size:.72rem; background:#334155; color:#cbd5e1;
@@ -194,7 +250,7 @@ PAGE = """
 <body>
 <div class="wrap">
   <h1>OCD Screening Assistant
-    <span class="pill">{{ 'GPT guidance ON' if gpt_on else 'static guidance' }}</span>
+    <span class="pill">{{ 'live AI guidance' if gpt_on else 'built-in guidance' }}</span>
   </h1>
   <div class="sub">Type how someone is feeling/behaving. A model trained on real
     Reddit mental-health posts estimates which condition the text most resembles,
@@ -209,9 +265,16 @@ PAGE = """
 
   {% if ranked %}
   <div class="card">
+    {% if uncertain %}
+    <div class="verdict uncertain">Uncertain &middot; not enough signal</div>
+    <div class="note">Top guess is {{ top_label|upper }} at only {{ '%.0f'|format(ranked[0][1]*100) }}%,
+      below the {{ '%.0f'|format(threshold*100) }}% confidence threshold &mdash; so the model abstains
+      instead of forcing a label.</div>
+    {% else %}
     <div class="verdict {{ 'ocd' if top_label=='ocd' else '' }}">
       Top match: {{ top_label|upper }} &middot; {{ '%.0f'|format(ranked[0][1]*100) }}% confidence
     </div>
+    {% endif %}
     {% for label, p in ranked %}
     <div class="bar-row">
       <div class="bar-label">{{ label }}</div>
@@ -220,6 +283,17 @@ PAGE = """
     </div>
     {% endfor %}
   </div>
+
+  {% if signals %}
+  <div class="card">
+    <div class="verdict">Why this prediction</div>
+    <div class="note">Words in the text that most pushed the model toward {{ top_label|upper }}
+      (TF-IDF &times; model weight):</div>
+    <div class="chips">
+      {% for w in signals %}<span class="chip {{ 'ocd' if top_label=='ocd' else '' }}">{{ w }}</span>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
 
   <div class="card">
     <div class="verdict">Guidance</div>
@@ -246,11 +320,15 @@ def index():
         ctx["text"] = text
         if len(text) >= 10:
             ranked = screen(text)
-            top_label = ranked[0][0]
+            top_label, top_p = ranked[0]
+            uncertain = top_p < CONFIDENCE_THRESHOLD
             ctx.update({
                 "ranked": ranked,
                 "top_label": top_label,
-                "guidance": get_guidance(top_label, text),
+                "uncertain": uncertain,
+                "threshold": CONFIDENCE_THRESHOLD,
+                "signals": [] if uncertain else explain(text, top_label),
+                "guidance": UNCERTAIN_GUIDANCE if uncertain else get_guidance(top_label, text),
             })
     return render_template_string(PAGE, **ctx)
 

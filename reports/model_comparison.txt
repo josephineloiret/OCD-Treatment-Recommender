@@ -1,0 +1,8 @@
+MODEL COMPARISON (same TF-IDF features)
+================================================================
+Model                     CV acc          Test acc  Test macroF1
+Dummy (most frequent)     0.296 +/- 0.000   0.295     0.114
+Logistic Regression       0.837 +/- 0.006   0.843     0.826
+Linear SVM                0.828 +/- 0.005   0.834     0.818
+
+Logistic Regression is used in the app: competitive accuracy, plus probabilities for the confidence threshold and coefficients for per-prediction explanations.

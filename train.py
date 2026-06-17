@@ -27,6 +27,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from sklearn.dummy import DummyClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
@@ -38,6 +39,7 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
 from sklearn.pipeline import Pipeline
+from sklearn.svm import LinearSVC
 
 DATA_DIR = "data"
 MODEL_DIR = "models"
@@ -118,6 +120,46 @@ def load_data():
     return data
 
 
+def compare_models(X_train, y_train, X_test, y_test, cv):
+    """Benchmark the chosen model against a baseline and an alternative.
+
+    Justifies the model choice with numbers instead of "I used the one I knew".
+    Logistic Regression is kept for the app because it exposes calibrated-ish
+    probabilities and readable coefficients; this shows it is also competitive.
+    """
+    def tfidf():
+        return TfidfVectorizer(stop_words="english", ngram_range=(1, 2),
+                               min_df=5, max_features=30000, sublinear_tf=True)
+
+    candidates = {
+        "Dummy (most frequent)": DummyClassifier(strategy="most_frequent"),
+        "Logistic Regression": LogisticRegression(max_iter=2000, C=3.0, class_weight="balanced"),
+        "Linear SVM": LinearSVC(C=1.0, class_weight="balanced"),
+    }
+
+    rows = []
+    for name, clf in candidates.items():
+        pipe = Pipeline([("tfidf", tfidf()), ("clf", clf)])
+        cv_acc = cross_val_score(pipe, X_train, y_train, cv=cv, scoring="accuracy")
+        pipe.fit(X_train, y_train)
+        pred = pipe.predict(X_test)
+        rows.append((name, cv_acc.mean(), cv_acc.std(),
+                     accuracy_score(y_test, pred), f1_score(y_test, pred, average="macro")))
+
+    lines = ["MODEL COMPARISON (same TF-IDF features)", "=" * 64,
+             f"{'Model':<26}{'CV acc':<16}{'Test acc':<10}{'Test macroF1'}"]
+    for name, m, s, acc, f1 in rows:
+        lines.append(f"{name:<26}{m:.3f} +/- {s:.3f}   {acc:<10.3f}{f1:.3f}")
+    lines.append("")
+    lines.append("Logistic Regression is used in the app: competitive accuracy, plus "
+                 "probabilities for the confidence threshold and coefficients for "
+                 "per-prediction explanations.")
+    text = "\n".join(lines)
+    with open(os.path.join(REPORT_DIR, "model_comparison.txt"), "w") as f:
+        f.write(text)
+    print("\n" + text)
+
+
 def main():
     os.makedirs(MODEL_DIR, exist_ok=True)
     os.makedirs(REPORT_DIR, exist_ok=True)
@@ -184,6 +226,9 @@ def main():
     with open(os.path.join(REPORT_DIR, "metrics.txt"), "w") as f:
         f.write(report_text)
     print("\n" + report_text)
+
+    print("\nComparing models...")
+    compare_models(X_train, y_train, X_test, y_test, cv)
 
     # ---- confusion matrix figure ----
     fig, ax = plt.subplots(figsize=(7, 6))
