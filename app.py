@@ -238,18 +238,18 @@ PAGE = """
   html { -webkit-font-smoothing:antialiased; }
   body { margin:0; min-height:100vh; color:var(--ink); font-family:var(--sans); background:var(--bg); }
 
-  .topbar { position:sticky; top:0; z-index:5; background:var(--topbar); color:#fff; border-bottom:1px solid #05070a; }
-  .topbar__in { max-width:880px; margin:0 auto; padding:13px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
-  .brand { display:flex; align-items:center; gap:12px; }
-  .mark { width:36px; height:36px; border-radius:8px; background:var(--accent); color:#fff;
-          display:grid; place-items:center; font-family:var(--mono); font-weight:500; font-size:.78rem; }
-  .brand__name { font-weight:700; font-size:1.04rem; letter-spacing:-.01em; }
-  .brand__sub { font-family:var(--mono); font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; color:#828b98; margin-top:2px; }
-  .chip-status { display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:.64rem;
-                 letter-spacing:.1em; text-transform:uppercase; color:#c2c9d2;
-                 border:1px solid #2a3038; border-radius:999px; padding:7px 13px; }
-  .dot { width:7px; height:7px; border-radius:50%; background:var(--live); box-shadow:0 0 8px rgba(34,197,94,.7); }
-  .dot.off { background:#6b7280; box-shadow:none; }
+  .topbar { position:sticky; top:0; z-index:5; background:var(--topbar); color:#fff; }
+  .topbar__in { max-width:880px; margin:0 auto; padding:0 24px; height:58px;
+                display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .brand { display:flex; align-items:center; gap:11px; }
+  .brand__bar { width:3px; height:22px; background:var(--accent); border-radius:2px; }
+  .brand__name { font-weight:700; font-size:1.05rem; letter-spacing:-.01em; }
+  .brand__tag { font-family:var(--mono); font-size:.64rem; letter-spacing:.14em; text-transform:uppercase; color:#7f8895; }
+  .topmeta { display:flex; align-items:center; gap:20px; }
+  .topmeta span { font-family:var(--mono); font-size:.64rem; letter-spacing:.09em; text-transform:uppercase; color:#7f8895; position:relative; }
+  .topmeta span + span::before { content:""; position:absolute; left:-10px; top:50%; transform:translateY(-50%);
+                                 width:1px; height:12px; background:#30363f; }
+  @media (max-width:600px){ .brand__tag, .topmeta { display:none; } }
 
   .wrap { max-width:880px; margin:0 auto; padding:28px 24px 72px; }
   .intro { color:var(--muted); font-size:.98rem; line-height:1.5; max-width:64ch; margin:4px 0 24px; }
@@ -313,16 +313,15 @@ PAGE = """
 <header class="topbar">
   <div class="topbar__in">
     <div class="brand">
-      <div class="mark">OCD</div>
-      <div>
-        <div class="brand__name">OCD Screening Tool</div>
-        <div class="brand__sub">NLP Decision Support</div>
-      </div>
+      <span class="brand__bar"></span>
+      <span class="brand__name">OCD Screening Tool</span>
+      <span class="brand__tag">/ clinical nlp screening</span>
     </div>
-    <div class="chip-status">
-      <span class="dot {{ '' if gpt_on else 'off' }}"></span>
-      {{ 'Live AI guidance' if gpt_on else 'Built-in guidance' }}
-    </div>
+    <nav class="topmeta">
+      <span>TF-IDF + LogReg</span>
+      <span>4 conditions</span>
+      <span>threshold {{ '%.0f'|format(threshold*100) }}%</span>
+    </nav>
   </div>
 </header>
 
@@ -400,7 +399,7 @@ PAGE = """
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    ctx = {"ranked": None, "text": "", "gpt_on": client is not None}
+    ctx = {"ranked": None, "text": "", "gpt_on": client is not None, "threshold": CONFIDENCE_THRESHOLD}
     if request.method == "POST":
         text = (request.form.get("text") or "").strip()
         ctx["text"] = text
