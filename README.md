@@ -1,15 +1,16 @@
-# OCD Screening Assistant
+# OCD Screening — Clinical Decision Support
 
-A machine-learning web app that reads a free-text description of someone's
-experience and estimates which mental-health condition it most resembles
-(**OCD, depression, ADHD, or PTSD**), then surfaces **evidence-based, guideline-level
-treatment information** for OCD. It is built on **real Reddit mental-health posts**
-and is intended as a research/educational demo of an end-to-end ML pipeline:
-data → text classifier → screening decision → guidance → deployed web app.
+A machine-learning web app, framed as a **clinician decision-support / triage aid**,
+that reads a patient's free-text intake and estimates which mental-health condition
+it most resembles (**OCD, depression, ADHD, or PTSD**), shows the language driving
+that call, abstains when unsure, and surfaces **evidence-based treatment options**
+for the clinician to review. It is built on **real Reddit mental-health posts** and
+is an end-to-end ML pipeline: data → text classifier → screening decision (with
+abstention) → explanation → guidance → deployed web app.
 
-> This is **not** a diagnostic tool. Screening is text-similarity, can be wrong,
-> and any real mental-health concern or treatment decision must be handled by a
-> licensed clinician.
+> This is **not** a diagnostic tool. Screening is text-similarity, can be wrong, and
+> is designed to assist a licensed clinician who reviews every output and makes all
+> clinical decisions. Do not enter identifying patient information.
 
 ## Results (held-out test set)
 
