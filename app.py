@@ -221,174 +221,178 @@ PAGE = """
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OCD Screening / Clinical Decision Support</title>
+<title>OCD Screening Tool</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --paper:#f3f0e7; --ink:#1b1d1a; --muted:#6b6859; --faint:#9c9889;
-    --rule:#d9d4c5; --accent:#0f6b54; --warn:#9a6312; --field:#fffdf7;
-    --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
-    --sans:'Hanken Grotesk',system-ui,sans-serif;
-    --serif:'Newsreader',Georgia,serif;
+    --bg:#eceff3; --surface:#ffffff; --ink:#13171c; --muted:#5c6571; --faint:#929aa6;
+    --line:#dce1e7; --track:#e7eaef; --rest:#b9c1cc;
+    --accent:#1f5cff; --accent-ink:#0c3bd6; --warn:#c2410c; --live:#22c55e;
+    --topbar:#13171c;
+    --mono:'Spline Sans Mono',ui-monospace,Menlo,monospace;
+    --sans:'Archivo',system-ui,sans-serif;
   }
   * { box-sizing:border-box; }
   html { -webkit-font-smoothing:antialiased; }
-  body { margin:0; min-height:100vh; color:var(--ink); font-family:var(--sans); background:var(--paper); }
-  body::before {
-    content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.55; mix-blend-mode:multiply;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
-  }
-  .sheet { position:relative; z-index:1; max-width:760px; margin:0 auto; padding:0 26px 90px; }
+  body { margin:0; min-height:100vh; color:var(--ink); font-family:var(--sans); background:var(--bg); }
 
-  .mast { padding:48px 0 0; }
-  .meta { font-family:var(--mono); font-size:.7rem; letter-spacing:.22em; text-transform:uppercase;
-          color:var(--accent); display:flex; justify-content:space-between; gap:12px;
-          border-bottom:1px solid var(--ink); padding-bottom:11px; }
-  .meta span:last-child { color:var(--faint); }
-  h1 { font-family:var(--serif); font-weight:400; font-size:3.4rem; line-height:1.03;
-       letter-spacing:-.015em; margin:28px 0 16px; }
-  h1 em { font-style:italic; color:var(--accent); }
-  .lede { font-family:var(--serif); font-size:1.18rem; line-height:1.5; color:#3a3a31;
-          max-width:55ch; margin:0 0 20px; }
-  .statusline { font-family:var(--mono); font-size:.71rem; letter-spacing:.05em; color:var(--muted);
-                display:flex; align-items:center; gap:9px; padding:13px 0 0; border-top:1px solid var(--rule); }
-  .tick { width:8px; height:8px; border-radius:50%; background:var(--accent); }
-  .tick.off { background:var(--faint); }
+  .topbar { position:sticky; top:0; z-index:5; background:var(--topbar); color:#fff; border-bottom:1px solid #05070a; }
+  .topbar__in { max-width:880px; margin:0 auto; padding:13px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .brand { display:flex; align-items:center; gap:12px; }
+  .mark { width:36px; height:36px; border-radius:8px; background:var(--accent); color:#fff;
+          display:grid; place-items:center; font-family:var(--mono); font-weight:500; font-size:.78rem; }
+  .brand__name { font-weight:700; font-size:1.04rem; letter-spacing:-.01em; }
+  .brand__sub { font-family:var(--mono); font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; color:#828b98; margin-top:2px; }
+  .chip-status { display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:.64rem;
+                 letter-spacing:.1em; text-transform:uppercase; color:#c2c9d2;
+                 border:1px solid #2a3038; border-radius:999px; padding:7px 13px; }
+  .dot { width:7px; height:7px; border-radius:50%; background:var(--live); box-shadow:0 0 8px rgba(34,197,94,.7); }
+  .dot.off { background:#6b7280; box-shadow:none; }
 
-  .block { display:grid; grid-template-columns:46px 1fr; gap:20px; padding:30px 0;
-           border-top:1px solid var(--rule); }
-  .block__no { font-family:var(--mono); font-size:.8rem; color:var(--accent); padding-top:4px; }
-  .field-label { font-family:var(--mono); font-size:.71rem; letter-spacing:.16em; text-transform:uppercase;
-                 color:var(--muted); margin-bottom:14px; }
+  .wrap { max-width:880px; margin:0 auto; padding:28px 24px 72px; }
+  .intro { color:var(--muted); font-size:.98rem; line-height:1.5; max-width:64ch; margin:4px 0 24px; }
 
-  textarea { width:100%; min-height:150px; resize:vertical; background:var(--field); color:var(--ink);
-             border:1px solid var(--rule); border-radius:2px; padding:15px; font-family:var(--mono);
-             font-size:.9rem; line-height:1.55; outline:none; transition:border-color .2s, box-shadow .2s; }
-  textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(15,107,84,.12); }
-  textarea::placeholder { color:var(--faint); }
-  .actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; gap:14px; }
-  .hint { font-family:var(--mono); font-size:.67rem; color:var(--faint); }
-  button { font-family:var(--mono); font-weight:500; letter-spacing:.08em; text-transform:uppercase;
-           font-size:.73rem; color:var(--paper); background:var(--ink); border:none; cursor:pointer;
-           padding:13px 20px; border-radius:2px; transition:background .2s, transform .12s; }
-  button:hover { background:var(--accent); transform:translateY(-1px); }
-  button:active { transform:translateY(0); }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:22px 22px 24px;
+          margin-bottom:16px; box-shadow:0 1px 2px rgba(16,23,33,.05); }
+  .card__head { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .card__title { font-weight:700; font-size:1.04rem; letter-spacing:-.01em; }
+  .tag { font-family:var(--mono); font-size:.6rem; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); }
 
-  .verdict-top { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:4px; }
-  .verdict-label { font-family:var(--serif); font-size:2.3rem; font-weight:400; line-height:1; }
-  .verdict-label.ocd { color:var(--accent); font-style:italic; }
-  .verdict-label.warn { color:var(--warn); font-style:italic; }
-  .verdict-num { font-family:var(--mono); font-size:.92rem; color:var(--muted); }
-  .note { color:var(--muted); font-size:.9rem; line-height:1.5; margin:8px 0 18px; }
+  textarea { width:100%; min-height:140px; resize:vertical; background:#fbfcfe; color:var(--ink);
+             border:1px solid var(--line); border-radius:9px; padding:14px; font-family:var(--sans);
+             font-size:.97rem; line-height:1.5; outline:none; transition:border-color .15s, box-shadow .15s; }
+  textarea:focus { border-color:var(--accent); box-shadow:0 0 0 4px rgba(31,92,255,.13); }
+  textarea::placeholder { color:#a3acb8; }
+  .actions { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-top:14px; }
+  .hint { font-family:var(--mono); font-size:.68rem; color:var(--faint); }
+  button { font-family:var(--sans); font-weight:600; font-size:.92rem; color:#fff; background:var(--accent);
+           border:none; border-radius:9px; padding:11px 22px; cursor:pointer; transition:background .15s, transform .1s; }
+  button:hover { background:var(--accent-ink); }
+  button:active { transform:translateY(1px); }
 
-  .bar-row { display:grid; grid-template-columns:92px 1fr 46px; align-items:center; gap:14px; margin:10px 0; }
-  .bar-label { font-family:var(--mono); font-size:.74rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
-  .bar { height:7px; background:#e7e2d3; border-radius:99px; overflow:hidden; }
-  .bar__fill { display:block; height:100%; width:0; border-radius:99px; background:#b9b3a0;
-               animation:grow 1.1s cubic-bezier(.2,.85,.2,1) forwards; }
-  .bar__fill.ocd { background:var(--accent); }
-  .bar-pct { font-family:var(--mono); font-size:.8rem; text-align:right; color:var(--ink); }
+  .verdict { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .verdict__name { font-weight:800; font-size:2.15rem; letter-spacing:-.02em; line-height:1; }
+  .verdict__name.warn { color:var(--warn); }
+  .verdict__meta { font-family:var(--mono); font-size:.76rem; color:var(--muted); text-align:right; line-height:1.5; }
+  .verdict__pct { font-family:var(--sans); font-weight:700; font-size:1.5rem; color:var(--ink); letter-spacing:-.01em; }
+  .note { color:var(--muted); font-size:.9rem; line-height:1.5; margin:12px 0 0; }
+
+  .gauge-wrap { position:relative; margin:24px 0 26px; }
+  .gauge { height:12px; background:var(--track); border-radius:7px; overflow:hidden; }
+  .gauge__fill { height:100%; width:0; background:var(--accent); border-radius:7px;
+                 animation:grow 1s cubic-bezier(.2,.8,.2,1) forwards; }
+  .gauge__fill.warn { background:var(--warn); }
+  .threshold { position:absolute; top:-3px; height:18px; width:2px; background:var(--ink); opacity:.5; }
+  .threshold__lab { position:absolute; top:-17px; transform:translateX(-50%); font-family:var(--mono);
+                    font-size:.57rem; letter-spacing:.04em; color:var(--muted); white-space:nowrap; }
+  .ticks { display:flex; justify-content:space-between; margin-top:7px; font-family:var(--mono); font-size:.57rem; color:var(--faint); }
+
+  .subtle { font-family:var(--mono); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); margin:0 0 10px; }
+  .bd-row { display:grid; grid-template-columns:92px 1fr 44px; align-items:center; gap:12px; margin:9px 0; }
+  .bd-label { font-family:var(--mono); font-size:.73rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+  .bd-track { height:6px; background:var(--track); border-radius:6px; overflow:hidden; }
+  .bd-fill { display:block; height:100%; width:0; background:var(--rest); border-radius:6px;
+             animation:grow 1s cubic-bezier(.2,.8,.2,1) forwards; }
+  .bd-fill.top { background:var(--accent); }
+  .bd-pct { font-family:var(--mono); font-size:.74rem; text-align:right; color:var(--ink); }
   @keyframes grow { to { width:var(--w); } }
 
-  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
-  .chip { font-family:var(--mono); font-size:.78rem; color:var(--muted); background:var(--field);
-          border:1px solid var(--rule); border-radius:2px; padding:6px 10px; }
-  .chip.ocd { color:var(--accent); border-color:var(--accent); }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; }
+  .chip { font-family:var(--mono); font-size:.78rem; color:var(--ink); background:#f2f6fd;
+          border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:5px; padding:6px 11px; }
 
-  .guidance { font-family:var(--sans); white-space:pre-wrap; line-height:1.65; color:#33332c; font-size:.95rem; }
+  .guidance { white-space:pre-wrap; line-height:1.6; color:#2b323b; font-size:.95rem; }
 
-  .colophon { font-family:var(--mono); color:var(--faint); font-size:.71rem; line-height:1.6;
-              border-top:1px solid var(--ink); padding-top:16px; margin-top:8px; }
-
-  .reveal { opacity:0; transform:translateY(14px); animation:rise .6s cubic-bezier(.2,.8,.2,1) forwards; }
-  .d1{animation-delay:.05s}.d2{animation-delay:.12s}.d3{animation-delay:.19s}.d4{animation-delay:.26s}
-  @keyframes rise { to { opacity:1; transform:none; } }
-  @media (max-width:560px){ h1{font-size:2.4rem} .block{grid-template-columns:1fr; gap:10px} .block__no{padding-top:0} .bar-row{grid-template-columns:70px 1fr 40px} }
+  .foot { font-family:var(--mono); color:var(--faint); font-size:.67rem; line-height:1.6; margin:6px 2px 0; }
+  @media (max-width:560px){ .verdict__name{font-size:1.8rem} .bd-row{grid-template-columns:68px 1fr 40px} }
 </style>
 </head>
 <body>
-<div class="sheet">
-  <header class="mast">
-    <div class="meta reveal"><span>Clinical Decision Support</span><span>OCD Screening / NLP Triage</span></div>
-    <h1 class="reveal d1">Screening &amp; <em>Triage</em></h1>
-    <p class="lede reveal d2">Reads a patient's intake text, flags the most likely condition, and shows why. You review and decide.</p>
-    <div class="statusline reveal d2">
-      <span class="tick {{ '' if gpt_on else 'off' }}"></span>
-      {{ 'LIVE AI GUIDANCE' if gpt_on else 'BUILT-IN GUIDANCE' }} &middot; CLINICIAN USE &middot; NOT A DIAGNOSIS
+<header class="topbar">
+  <div class="topbar__in">
+    <div class="brand">
+      <div class="mark">OCD</div>
+      <div>
+        <div class="brand__name">OCD Screening Tool</div>
+        <div class="brand__sub">NLP Decision Support</div>
+      </div>
     </div>
-  </header>
+    <div class="chip-status">
+      <span class="dot {{ '' if gpt_on else 'off' }}"></span>
+      {{ 'Live AI guidance' if gpt_on else 'Built-in guidance' }}
+    </div>
+  </div>
+</header>
 
-  <section class="block reveal d2">
-    <div class="block__no">01</div>
-    <div>
-      <div class="field-label">Patient intake text</div>
-      <form method="post">
-        <textarea name="text" placeholder="Type or paste the patient's own words about how they've been feeling.">{{ text or '' }}</textarea>
-        <div class="actions">
-          <span class="hint">min 10 chars &middot; de-identified</span>
-          <button type="submit">Run screening &rarr;</button>
-        </div>
-      </form>
-    </div>
+<main class="wrap">
+  <p class="intro">Screens a patient's intake text, estimates the most likely condition, shows the words
+    behind it, and abstains when unsure. You review and decide.</p>
+
+  <section class="card">
+    <div class="card__head"><div class="card__title">Patient intake</div><div class="tag">Input</div></div>
+    <form method="post">
+      <textarea name="text" placeholder="Type or paste the patient's own words about how they've been feeling.">{{ text or '' }}</textarea>
+      <div class="actions">
+        <span class="hint">min 10 chars / de-identified</span>
+        <button type="submit">Run screening</button>
+      </div>
+    </form>
   </section>
 
   {% if ranked %}
-  <section class="block reveal d1">
-    <div class="block__no">02</div>
-    <div>
-      <div class="field-label">Assessment</div>
-      {% if uncertain %}
-      <div class="verdict-top">
-        <span class="verdict-label warn">Uncertain</span>
-        <span class="verdict-num">top: {{ top_label|upper }} @ {{ '%.0f'|format(ranked[0][1]*100) }}%</span>
-      </div>
-      <div class="note">Below the {{ '%.0f'|format(threshold*100) }}% threshold, so the model holds back instead of guessing.</div>
-      {% else %}
-      <div class="verdict-top">
-        <span class="verdict-label {{ 'ocd' if top_label=='ocd' else '' }}">{{ top_label|upper }}</span>
-        <span class="verdict-num">{{ '%.1f'|format(ranked[0][1]*100) }}% confidence</span>
-      </div>
-      <div class="note">Probability by condition:</div>
-      {% endif %}
-      {% for label, p in ranked %}
-      <div class="bar-row">
-        <span class="bar-label">{{ label }}</span>
-        <span class="bar"><span class="bar__fill {{ 'ocd' if label=='ocd' else '' }}" style="--w: {{ p*100 }}%"></span></span>
-        <span class="bar-pct">{{ '%.0f'|format(p*100) }}%</span>
-      </div>
-      {% endfor %}
+  <section class="card">
+    <div class="card__head"><div class="card__title">Result</div><div class="tag">Assessment</div></div>
+    {% if uncertain %}
+    <div class="verdict">
+      <div class="verdict__name warn">Uncertain</div>
+      <div class="verdict__meta">top {{ top_label|upper }}<br>{{ '%.0f'|format(ranked[0][1]*100) }}%</div>
     </div>
+    <div class="note">Top score is below the {{ '%.0f'|format(threshold*100) }}% threshold, so the tool holds back instead of guessing.</div>
+    {% else %}
+    <div class="verdict">
+      <div class="verdict__name">{{ top_label|upper }}</div>
+      <div class="verdict__meta"><span class="verdict__pct">{{ '%.0f'|format(ranked[0][1]*100) }}%</span><br>confidence</div>
+    </div>
+    {% endif %}
+
+    <div class="gauge-wrap">
+      <div class="gauge"><span class="gauge__fill {{ 'warn' if uncertain else '' }}" style="--w: {{ ranked[0][1]*100 }}%"></span></div>
+      <div class="threshold" style="left: {{ threshold*100 }}%"></div>
+      <div class="threshold__lab" style="left: {{ threshold*100 }}%">threshold {{ '%.0f'|format(threshold*100) }}%</div>
+      <div class="ticks"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
+    </div>
+
+    <div class="subtle">Probability by condition</div>
+    {% for label, p in ranked %}
+    <div class="bd-row">
+      <span class="bd-label">{{ label }}</span>
+      <span class="bd-track"><span class="bd-fill {{ 'top' if loop.first and not uncertain else '' }}" style="--w: {{ p*100 }}%"></span></span>
+      <span class="bd-pct">{{ '%.0f'|format(p*100) }}%</span>
+    </div>
+    {% endfor %}
   </section>
 
   {% if signals %}
-  <section class="block reveal d2">
-    <div class="block__no">03</div>
-    <div>
-      <div class="field-label">Contributing language</div>
-      <div class="note">Words that pushed the model toward <b>{{ top_label|upper }}</b> (TF-IDF &times; weight):</div>
-      <div class="chips">
-        {% for w in signals %}<span class="chip {{ 'ocd' if top_label=='ocd' else '' }}">{{ w }}</span>{% endfor %}
-      </div>
+  <section class="card">
+    <div class="card__head"><div class="card__title">Why this result</div><div class="tag">Signals</div></div>
+    <div class="note">Words that pushed the model toward {{ top_label|upper }} (TF-IDF &times; weight).</div>
+    <div class="chips" style="margin-top:12px">
+      {% for w in signals %}<span class="chip">{{ w }}</span>{% endfor %}
     </div>
   </section>
   {% endif %}
 
-  <section class="block reveal d3">
-    <div class="block__no">04</div>
-    <div>
-      <div class="field-label">Treatment options for review</div>
-      <div class="guidance">{{ guidance }}</div>
-    </div>
+  <section class="card">
+    <div class="card__head"><div class="card__title">Treatment options</div><div class="tag">For review</div></div>
+    <div class="guidance">{{ guidance }}</div>
   </section>
   {% endif %}
 
-  <div class="colophon">
-    Educational demo. Screening can be wrong and is not a diagnosis. A licensed clinician reviews
-    every output. Do not enter identifying information.
-  </div>
-</div>
+  <p class="foot">Educational demo. Screening can be wrong and is not a diagnosis. A licensed clinician
+    reviews every output. Do not enter identifying information.</p>
+</main>
 </body>
 </html>
 """
